@@ -33,6 +33,7 @@ const Login = ({ onLoginSuccess }) => {
 			if (data.error) {
 				setError(data.error.message);
 			} else {
+                localStorage.setItem("email", data.email)
 				localStorage.setItem("token", data.idToken);
 				onLoginSuccess();
 			}

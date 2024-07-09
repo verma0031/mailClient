@@ -25,17 +25,27 @@ const EmailEditor = ({ onSendEmail }) => {
 			convertToRaw(editorState.getCurrentContent())
 		);
 
+		const senderEmail = localStorage.getItem("email"); // Assuming the user's email is stored in localStorage
+		console.log(senderEmail);
+
 		const emailData = {
 			recipientEmail,
 			subject,
 			content,
-			senderEmail: localStorage.getItem("userEmail"), // Assuming the user's email is stored in localStorage
+			senderEmail,
 			timestamp: new Date().toISOString(),
 		};
 
+		// Function to sanitize email for use in Firebase path
+		const sanitizeEmail = (email) => {
+			return email.replace(/[.#$[\]]/g, "");
+		};
+
 		try {
-			const response = await fetch(
-				"https://your-firebase-api-url/emails.json",
+			const senderResponse = await fetch(
+				`https://mail-client-fcc2f-default-rtdb.firebaseio.com/sent-emails/${sanitizeEmail(
+					senderEmail
+				)}.json`,
 				{
 					method: "POST",
 					headers: {
@@ -45,8 +55,25 @@ const EmailEditor = ({ onSendEmail }) => {
 				}
 			);
 
-			if (!response.ok) {
-				throw new Error("Failed to send email.");
+			const recipientResponse = await fetch(
+				`https://mail-client-fcc2f-default-rtdb.firebaseio.com/received-emails/${sanitizeEmail(
+					recipientEmail
+				)}.json`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(emailData),
+				}
+			);
+
+			if (!senderResponse.ok) {
+				throw new Error("Failed to send email from sender.");
+			}
+
+			if (!recipientResponse.ok) {
+				throw new Error("Failed to send email to recipient.");
 			}
 
 			onSendEmail(); // Callback function to handle post-send actions
