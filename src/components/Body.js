@@ -97,6 +97,34 @@ const Body = () => {
 		}
 	};
 
+	// Function to delete email
+	const deleteEmail = async (emailId) => {
+		try {
+            
+			const sanitizeEmail = (email) => {
+				return email.replace(/[.#$[\]]/g, "");
+			};
+
+			const response = await fetch(
+				`https://mail-client-fcc2f-default-rtdb.firebaseio.com/received-emails/${sanitizeEmail(
+					userEmail
+				)}/${emailId}.json`,
+				{
+					method: "DELETE",
+				}
+			);
+			if (!response.ok) {
+				throw new Error("Failed to delete email.");
+			}
+			// Remove the email from local state
+			setEmails((prevEmails) =>
+				prevEmails.filter((email) => email.id !== emailId)
+			);
+		} catch (error) {
+			setError(error.message);
+		}
+	};
+
 	// Function to handle click on an email to view full content
 	const handleEmailClick = (emailId) => {
 		setSelectedEmail(emailId);
@@ -121,8 +149,6 @@ const Body = () => {
 							className={`border p-4 mb-2 rounded ${
 								email.read ? "" : "bg-blue-200"
 							}`}
-							onClick={() => handleEmailClick(email.id)}
-							style={{ cursor: "pointer", position: "relative" }}
 						>
 							{/* Blue dot indicator for unread emails */}
 							{!email.read && (
@@ -145,6 +171,13 @@ const Body = () => {
 							<p className="text-gray-600 text-sm mt-2">
 								{new Date(email.timestamp).toLocaleString()}
 							</p>
+							{/* Delete button */}
+							<button
+								className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-2"
+								onClick={() => deleteEmail(email.id)}
+							>
+								Delete
+							</button>
 						</li>
 					))}
 				</ul>
