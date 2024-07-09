@@ -33,6 +33,7 @@ const EmailEditor = ({ onSendEmail }) => {
 			subject,
 			content,
 			senderEmail,
+            read: false,
 			timestamp: new Date().toISOString(),
 		};
 

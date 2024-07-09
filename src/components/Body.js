@@ -3,15 +3,10 @@ import { Link } from "react-router-dom";
 
 const Body = () => {
 	const [emails, setEmails] = useState([]);
+	const [unreadCount, setUnreadCount] = useState(0);
 	const [error, setError] = useState("");
+	const [selectedEmail, setSelectedEmail] = useState(null);
 	const userEmail = localStorage.getItem("email");
-
-	console.log("User email from body", userEmail);
-
-	// Function to sanitize email for use in Firebase path
-	const sanitizeEmail = (email) => {
-		return email.replace(/[.#$[\]]/g, "");
-	};
 
 	useEffect(() => {
 		const fetchReceivedEmails = async () => {
@@ -39,19 +34,20 @@ const Body = () => {
 
 				if (!data) {
 					setEmails([]);
+					setUnreadCount(0);
 					return;
 				}
 
-				// Transform data into an array of emails
+				// Transform data into an array of emails with read status
 				const receivedEmails = Object.keys(data).map((key) => ({
 					id: key,
-					subject: data[key].subject,
-					content: data[key].content,
-					senderEmail: data[key].senderEmail,
-					timestamp: data[key].timestamp,
+					...data[key],
 				}));
-
 				setEmails(receivedEmails);
+
+				// Calculate unread count
+				const unread = receivedEmails.filter((email) => !email.read).length;
+				setUnreadCount(unread);
 			} catch (error) {
 				setError(error.message);
 			}
@@ -59,6 +55,54 @@ const Body = () => {
 
 		fetchReceivedEmails();
 	}, [userEmail]);
+
+	// Function to mark email as read
+	const markAsRead = async (emailId) => {
+		try {
+			const emailToUpdate = emails.find((email) => email.id === emailId);
+			if (!emailToUpdate || emailToUpdate.read) {
+				return; // If email is already read or not found, do nothing
+			}
+
+			const sanitizeEmail = (email) => {
+				return email.replace(/[.#$[\]]/g, "");
+			};
+
+			const response = await fetch(
+				`https://mail-client-fcc2f-default-rtdb.firebaseio.com/received-emails/${sanitizeEmail(
+					userEmail
+				)}/${emailId}/read.json`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(true), // Setting read status to true
+				}
+			);
+			if (!response.ok) {
+				throw new Error("Failed to mark email as read.");
+			}
+			// Update the local state to mark email as read
+			setEmails((prevEmails) =>
+				prevEmails.map((email) =>
+					email.id === emailId ? { ...email, read: true } : email
+				)
+			);
+
+			// Update unread count
+			setUnreadCount((prevCount) => prevCount - 1);
+		} catch (error) {
+			setError(error.message);
+		}
+	};
+
+	// Function to handle click on an email to view full content
+	const handleEmailClick = (emailId) => {
+		setSelectedEmail(emailId);
+		// Optionally mark the email as read when clicked
+		markAsRead(emailId);
+	};
 
 	return (
 		<div className="container mx-auto p-4">
@@ -68,20 +112,36 @@ const Body = () => {
 				</button>
 			</Link>
 			{error && <div className="text-red-500 mb-4">{error}</div>}
-			<h2 className="text-2xl mb-4">Inbox</h2>
+			<h2 className="text-2xl mb-4">Inbox ({unreadCount} unread)</h2>
 			{emails.length > 0 ? (
 				<ul>
 					{emails.map((email) => (
-						<li key={email.id} className="border p-4 mb-2 rounded">
+						<li
+							key={email.id}
+							className={`border p-4 mb-2 rounded ${
+								email.read ? "" : "bg-blue-200"
+							}`}
+							onClick={() => handleEmailClick(email.id)}
+							style={{ cursor: "pointer", position: "relative" }}
+						>
+							{/* Blue dot indicator for unread emails */}
+							{!email.read && (
+								<span
+									className="bg-blue-500 rounded-full h-3 w-3 absolute top-1 right-1"
+									style={{ zIndex: 10 }}
+								/>
+							)}
 							<h3 className="text-xl font-bold">{email.subject}</h3>
 							<p className="text-gray-600 text-sm">From: {email.senderEmail}</p>
-							{email.content &&
-								email.content.blocks &&
-								email.content.blocks[0] && (
-									<p className="text-gray-800 mt-2">
-										{email.content.blocks[0].text}
-									</p>
-								)}
+							{/* Displaying full content on click */}
+							{selectedEmail === email.id && (
+								<p className="text-gray-800 mt-2">
+									{email.content &&
+										email.content.blocks &&
+										email.content.blocks[0] &&
+										email.content.blocks[0].text}
+								</p>
+							)}
 							<p className="text-gray-600 text-sm mt-2">
 								{new Date(email.timestamp).toLocaleString()}
 							</p>
