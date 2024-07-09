@@ -10,6 +10,7 @@ import Signup from "./components/Signup";
 import Login from "./components/Login";
 import Header from "./components/Header";
 import EmailEditor from "./components/EmailEditor";
+import Sent from "./components/Sent";
 
 const App = () => {
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -65,6 +66,7 @@ const App = () => {
 						)
 					}
 				/>
+                <Route path="/sent" element={<Sent />} />
 				<Route path="*" element={<Navigate to="/signup" />} />
 			</Routes>
 		</Router>
