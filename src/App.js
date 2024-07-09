@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import Signup from "./components/Signup";
 import Login from "./components/Login";
 import Header from "./components/Header";
+import EmailEditor from "./components/EmailEditor";
 import { useState } from "react";
 
 import {
@@ -32,6 +33,15 @@ const App = () => {
 							element={<Login onLoginSuccess={handleLoginSuccess} />}
 						/>
 						<Route path="*" element={<Navigate to="/signup" />} />
+
+						<Route
+							path="/compose"
+							element={
+								<EmailEditor
+									onSendEmail={() => alert("Email sent successfully!")}
+								/>
+							}
+						/>
 					</Routes>
 				)}
 			</div>
